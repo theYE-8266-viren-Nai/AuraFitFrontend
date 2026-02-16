@@ -5,8 +5,6 @@ import {
   Users, 
   Dumbbell, 
   Award,
-  TrendingUp,
-  Sparkles,
   ArrowRight,
   Plus,
   ListChecks

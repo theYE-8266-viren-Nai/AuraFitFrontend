@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Users, UserPlus, Mail, Phone, Calendar, Trash2, Search, Filter } from 'lucide-react';
+import { Users, UserPlus, Mail, Phone, Calendar, Trash2, Search} from 'lucide-react';
 import { useApi, useMutation } from '../hooks/useApi';
 import { membersApi, CreateMemberData } from '../services/membersApi';
 import { Member } from '../types';

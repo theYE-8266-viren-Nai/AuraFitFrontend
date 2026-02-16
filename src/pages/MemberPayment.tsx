@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion} from 'framer-motion';
 import { CreditCard, DollarSign, CheckCircle, AlertCircle, Receipt, Calendar, Wallet } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useApi, useMutation } from '../hooks/useApi';

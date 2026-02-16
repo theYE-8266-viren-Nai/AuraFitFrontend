@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CreditCard, Users, Calendar, Plus, Edit, Trash2, CheckCircle, XCircle } from 'lucide-react';
+import { CreditCard,  Plus, Edit, Trash2, CheckCircle, XCircle } from 'lucide-react';
 import { useApi, useMutation } from '../hooks/useApi';
 import { membershipsApi, CreateMembershipData, UpdateMembershipFormData } from '../services/membershipsApi';
 import { membersApi } from '../services/membersApi';

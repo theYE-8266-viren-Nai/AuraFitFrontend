@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Calendar, Clock, UserCheck, Filter, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
+import { Calendar, Clock, UserCheck, Filter, CheckCircle,  } from 'lucide-react';
 import { useApi, useMutation } from '../hooks/useApi';
 import { attendanceApi, CreateAttendanceData, UpdateAttendanceFormData } from '../services/attendanceApi';
 import { membersApi } from '../services/membersApi';
