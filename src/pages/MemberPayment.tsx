@@ -1,0 +1,274 @@
+import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { CreditCard, DollarSign, CheckCircle, AlertCircle, Receipt, Calendar, Wallet } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
+import { useApi, useMutation } from '../hooks/useApi';
+import { paymentsApi, CreatePaymentData } from '../services/paymentsApi';
+import { membershipsApi } from '../services/membershipsApi';
+import { Payment, MembershipStatusResponse } from '../types';
+import { Modal } from '../components/shared/Modal';
+import { useToast } from '../components/shared/Toast';
+
+export const MemberPayment: React.FC = () => {
+  const { user } = useAuth();
+  const { showSuccess, showError } = useToast();
+  
+  const { data: membershipStatus, refetch: refetchStatus } = useApi<MembershipStatusResponse>(
+    () => membershipsApi.getStatus()
+  );
+  
+  const { data: payments, isLoading, refetch: refetchPayments } = useApi<Payment[]>(
+    () => paymentsApi.myPayments()
+  );
+  
+  const { mutate: makePayment, isLoading: isProcessing } = useMutation(paymentsApi.create);
+
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [formData, setFormData] = useState<Omit<CreatePaymentData, 'member_id'>>({
+    amount: 0,
+    method: 'Credit Card',
+  });
+
+  const paymentMethods = [
+    { value: 'Credit Card', icon: '💳', color: 'from-red-600 to-red-800' },
+    { value: 'Debit Card', icon: '💳', color: 'from-red-700 to-orange-800' },
+    { value: 'Bank Transfer', icon: '🏦', color: 'from-amber-600 to-yellow-700' },
+    { value: 'PayPal', icon: '🅿️', color: 'from-red-500 to-orange-500' },
+    { value: 'Mobile Payment', icon: '📱', color: 'from-yellow-500 to-red-500' },
+    { value: 'Cash', icon: '💵', color: 'from-emerald-600 to-green-700' },
+  ];
+
+  const membershipPlans = [
+    { name: 'Monthly', duration: 30, price: 50, icon: '🧧' },
+    { name: 'Quarterly', duration: 90, price: 135, icon: '🏮' },
+    { name: 'Semi-Annual', duration: 180, price: 255, icon: '🎆' },
+    { name: 'Annual', duration: 365, price: 480, icon: '🐉' },
+  ];
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user?.member?.id) {
+      showError('Member information not found');
+      return;
+    }
+
+    try {
+      await makePayment({
+        member_id: user.member.id,
+        ...formData,
+      });
+      showSuccess('Payment successful! Happy New Year! 🏮');
+      setShowPaymentModal(false);
+      setFormData({ amount: 0, method: 'Credit Card' });
+      refetchPayments();
+      refetchStatus();
+    } catch (error: any) {
+      showError(error.response?.data?.message || 'Payment failed');
+    }
+  };
+
+  const selectPlan = (plan: typeof membershipPlans[0]) => {
+    setFormData({ ...formData, amount: plan.price });
+  };
+
+  const totalPaid = payments?.reduce((sum, p) => sum + Number(p.amount), 0) || 0;
+  const thisMonthPayments = payments?.filter(p => {
+    const date = new Date(p.date);
+    const now = new Date();
+    return date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear();
+  }) || [];
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-[#fffcf0]">
+        <motion.div className="text-center">
+          <motion.div
+            className="w-16 h-16 border-4 border-red-600 border-t-amber-400 rounded-full mx-auto mb-4"
+            animate={{ rotate: 360 }}
+            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+          />
+          <p className="text-red-800 font-bold tracking-widest">LOADING WEALTH...</p>
+        </motion.div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 bg-[#fffcf0] min-h-screen">
+      {/* Header */}
+      <motion.div
+        className="flex justify-between items-center mb-8 border-b-2 border-amber-200 pb-6"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+      >
+        <div className="flex items-center gap-4">
+          <div className="p-3 bg-gradient-to-b from-red-600 to-red-800 rounded-full shadow-lg shadow-red-200 border-2 border-amber-400">
+            <Wallet className="w-6 h-6 text-amber-200" />
+          </div>
+          <h1 className="text-3xl font-black text-red-800 tracking-tighter uppercase">
+            Wealth & Subscriptions
+          </h1>
+        </div>
+        <motion.button
+          onClick={() => setShowPaymentModal(true)}
+          className="px-6 py-3 bg-gradient-to-r from-red-600 via-red-500 to-red-600 text-amber-100 rounded-lg hover:shadow-[0_0_20px_rgba(220,38,38,0.4)] transition-all font-bold border-b-4 border-red-800 flex items-center gap-2"
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+        >
+          <CreditCard className="w-5 h-5 text-amber-300" />
+          Make Payment
+        </motion.button>
+      </motion.div>
+
+      {/* Status Banner */}
+      <motion.div
+        className={`rounded-2xl p-6 mb-8 border-2 shadow-xl ${
+          membershipStatus?.has_active_membership
+            ? 'bg-gradient-to-r from-red-700 to-red-900 border-amber-500'
+            : 'bg-white border-red-200'
+        }`}
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+      >
+        <div className="flex items-center justify-between flex-wrap gap-4">
+          <div className="flex items-center gap-6">
+            <div className={`w-16 h-16 rounded-full flex items-center justify-center border-2 ${
+                membershipStatus?.has_active_membership ? 'bg-amber-400 border-amber-200 text-red-700' : 'bg-red-50 border-red-100 text-red-400'
+            }`}>
+              {membershipStatus?.has_active_membership ? <CheckCircle className="w-10 h-10" /> : <AlertCircle className="w-10 h-10" />}
+            </div>
+            <div>
+              <h2 className={`text-2xl font-black ${membershipStatus?.has_active_membership ? 'text-amber-300' : 'text-red-800'}`}>
+                {membershipStatus?.has_active_membership ? 'LUCKY & ACTIVE ✅' : 'MEMBERSHIP EXPIRED 🏮'}
+              </h2>
+              <p className={membershipStatus?.has_active_membership ? 'text-amber-100/80' : 'text-red-600/70'}>
+                {membershipStatus?.has_active_membership 
+                  ? `Your ${membershipStatus.active_membership?.type} plan is valid until ${new Date(membershipStatus.active_membership?.end_date || '').toLocaleDateString()}`
+                  : 'Renew your subscription to invite prosperity and access the gym.'}
+              </p>
+            </div>
+          </div>
+        </div>
+      </motion.div>
+
+      {/* Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        {[
+          { label: 'Total Contribution', value: `$${totalPaid.toFixed(2)}`, icon: DollarSign },
+          { label: 'Recent Transactions', value: thisMonthPayments.length, icon: Calendar },
+          { label: 'Historical Records', value: payments?.length || 0, icon: Receipt },
+        ].map((stat, index) => (
+          <motion.div
+            key={stat.label}
+            className="bg-white rounded-xl shadow-md p-6 border-l-4 border-red-600 hover:shadow-lg transition-all"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 + index * 0.1 }}
+          >
+            <p className="text-xs font-black text-red-800/50 uppercase tracking-widest mb-1">{stat.label}</p>
+            <p className="text-3xl font-black text-red-700">{stat.value}</p>
+          </motion.div>
+        ))}
+      </div>
+
+      {/* History */}
+      <motion.div
+        className="bg-white rounded-2xl shadow-xl p-6 border border-amber-100"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.5 }}
+      >
+        <h2 className="text-xl font-black text-red-800 mb-6 flex items-center gap-2 uppercase tracking-tighter">
+          <Receipt className="w-6 h-6" /> Transaction Log
+        </h2>
+        {payments && payments.length > 0 ? (
+          <div className="space-y-4">
+            {payments.map((payment, index) => (
+              <motion.div
+                key={payment.id}
+                className="group border border-red-50 rounded-xl p-4 bg-[#fffcf0] hover:bg-red-50 transition-all flex justify-between items-center"
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+              >
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-red-600 rounded-lg flex items-center justify-center text-amber-200 font-bold shadow-md">
+                    <span className="text-xl font-black">$</span>
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xl font-black text-red-800">${payment.amount}</span>
+                      <span className="text-[10px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded font-black uppercase">{payment.status}</span>
+                    </div>
+                    <p className="text-xs font-bold text-red-800/40 uppercase tracking-tighter">
+                      {new Date(payment.date).toLocaleDateString()} • {payment.method}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={async () => { /* Logic */ }}
+                  className="p-2 text-red-600 hover:bg-red-600 hover:text-white rounded-lg transition-all border border-red-100"
+                >
+                  <Receipt className="w-5 h-5" />
+                </button>
+              </motion.div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-12 opacity-30 italic text-red-900">No records found...</div>
+        )}
+      </motion.div>
+
+      {/* Modal - Themed */}
+      <Modal isOpen={showPaymentModal} onClose={() => setShowPaymentModal(false)} title="🧧 New Transaction" size="lg">
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="grid grid-cols-2 gap-4">
+            {membershipPlans.map((plan) => (
+              <button
+                key={plan.name}
+                type="button"
+                onClick={() => selectPlan(plan)}
+                className={`p-4 border-2 rounded-xl text-left transition-all ${
+                  formData.amount === plan.price ? 'border-red-600 bg-red-50 shadow-inner' : 'border-amber-100 bg-white'
+                }`}
+              >
+                <div className="text-2xl mb-1">{plan.icon}</div>
+                <div className="font-black text-red-800 text-sm uppercase">{plan.name}</div>
+                <div className="text-2xl font-black text-red-600">${plan.price}</div>
+              </button>
+            ))}
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-xs font-black text-red-800 uppercase">Amount</label>
+            <div className="relative">
+              <input
+                type="number"
+                value={formData.amount}
+                onChange={(e) => setFormData({ ...formData, amount: parseFloat(e.target.value) })}
+                className="w-full p-4 bg-red-50 border-2 border-amber-100 rounded-xl focus:border-red-600 outline-none font-black text-red-800 text-xl"
+              />
+              <DollarSign className="absolute right-4 top-4 text-red-300" />
+            </div>
+          </div>
+
+          <div className="flex gap-4 pt-4">
+            <button
+              type="button"
+              onClick={() => setShowPaymentModal(false)}
+              className="flex-1 py-4 font-black text-red-800 uppercase tracking-widest text-sm"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={isProcessing || formData.amount <= 0}
+              className="flex-[2] py-4 bg-red-600 text-amber-100 font-black rounded-xl shadow-lg shadow-red-200 border-b-4 border-red-800 uppercase tracking-widest"
+            >
+              {isProcessing ? 'Processing...' : `Confirm $${formData.amount}`}
+            </button>
+          </div>
+        </form>
+      </Modal>
+    </div>
+  );
+};
