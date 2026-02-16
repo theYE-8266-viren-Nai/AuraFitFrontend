@@ -29,14 +29,14 @@ export const MemberPayment: React.FC = () => {
     method: 'Credit Card',
   });
 
-  const paymentMethods = [
-    { value: 'Credit Card', icon: '💳', color: 'from-red-600 to-red-800' },
-    { value: 'Debit Card', icon: '💳', color: 'from-red-700 to-orange-800' },
-    { value: 'Bank Transfer', icon: '🏦', color: 'from-amber-600 to-yellow-700' },
-    { value: 'PayPal', icon: '🅿️', color: 'from-red-500 to-orange-500' },
-    { value: 'Mobile Payment', icon: '📱', color: 'from-yellow-500 to-red-500' },
-    { value: 'Cash', icon: '💵', color: 'from-emerald-600 to-green-700' },
-  ];
+  // const paymentMethods = [
+  //   { value: 'Credit Card', icon: '💳', color: 'from-red-600 to-red-800' },
+  //   { value: 'Debit Card', icon: '💳', color: 'from-red-700 to-orange-800' },
+  //   { value: 'Bank Transfer', icon: '🏦', color: 'from-amber-600 to-yellow-700' },
+  //   { value: 'PayPal', icon: '🅿️', color: 'from-red-500 to-orange-500' },
+  //   { value: 'Mobile Payment', icon: '📱', color: 'from-yellow-500 to-red-500' },
+  //   { value: 'Cash', icon: '💵', color: 'from-emerald-600 to-green-700' },
+  // ];
 
   const membershipPlans = [
     { name: 'Monthly', duration: 30, price: 50, icon: '🧧' },
@@ -183,7 +183,7 @@ export const MemberPayment: React.FC = () => {
         </h2>
         {payments && payments.length > 0 ? (
           <div className="space-y-4">
-            {payments.map((payment, index) => (
+            {payments.map((payment) => (
               <motion.div
                 key={payment.id}
                 className="group border border-red-50 rounded-xl p-4 bg-[#fffcf0] hover:bg-red-50 transition-all flex justify-between items-center"
