@@ -7,7 +7,7 @@ const CACHE_DURATION = 30000; // 30 seconds
 // Create axios instance with base configuration
 const api: AxiosInstance = axios.create({
   baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8000/api',
-  timeout: 10000, // ⭐ FIX: 10 second timeout - prevents infinite loading
+  timeout: 30000, // ⭐ FIX: 10 second timeout - prevents infinite loading
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
