@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   CreditCard, 
   CheckCircle, 
@@ -10,7 +10,11 @@ import {
   Award,
   Sparkles,
   ArrowRight,
-  AlertCircle
+  AlertCircle,
+  ChevronDown,
+  ChevronUp,
+  User,
+  Clock
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { membershipsApi } from '../services/membershipsApi';
@@ -30,6 +34,7 @@ export const MemberDashboard: React.FC = () => {
   const [workoutPlans, setWorkoutPlans] = useState<WorkoutPlan[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [expandedPlanId, setExpandedPlanId] = useState<number | null>(null);
 
   useEffect(() => {
     loadData();
@@ -64,6 +69,10 @@ export const MemberDashboard: React.FC = () => {
     } catch (error) {
       showError('Failed to mark attendance');
     }
+  };
+
+  const togglePlanExpansion = (planId: number) => {
+    setExpandedPlanId(expandedPlanId === planId ? null : planId);
   };
 
   const monthlyAttendance = attendance.filter((a) => 
@@ -319,107 +328,197 @@ export const MemberDashboard: React.FC = () => {
           </div>
         </motion.div>
 
-        {/* Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* My Workout Plans */}
-          <motion.div
-            className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg p-6 border-2 border-white/50"
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 1 }}
-          >
-            <div className="flex items-center gap-2 mb-6">
-              <Dumbbell className="w-5 h-5 text-red-500" />
-              <h2 className="text-xl font-bold text-gray-900">Active Workout Plans</h2>
-            </div>
-            {workoutPlans.length > 0 ? (
-              <div className="space-y-4">
-                {workoutPlans.slice(0, 2).map((plan, index) => (
-                  <motion.div
-                    key={plan.id}
-                    className="border-2 border-orange-100 rounded-xl p-4 bg-gradient-to-r from-red-50 to-orange-50 hover:shadow-md transition-all"
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 1.1 + index * 0.1 }}
-                    whileHover={{ scale: 1.02 }}
-                  >
-                    <div className="flex items-center gap-2 mb-3">
-                      <Award className="w-4 h-4 text-orange-600" />
-                      <span className="text-sm text-gray-600 font-medium">
-                        Trainer: {plan.trainer?.user?.username}
-                      </span>
-                    </div>
-                    <div className="bg-white/80 rounded-lg p-3">
-                      <p className="text-sm text-gray-700 line-clamp-3 whitespace-pre-wrap">
-                        {plan.description}
-                      </p>
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-12">
-                <Dumbbell className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                <p className="text-gray-500 font-medium">No workout plans assigned yet</p>
-              </div>
-            )}
-          </motion.div>
-
-          {/* Recent Attendance */}
-          <motion.div
-            className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg p-6 border-2 border-white/50"
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 1 }}
-          >
-            <div className="flex items-center gap-2 mb-6">
-              <Calendar className="w-5 h-5 text-orange-500" />
-              <h2 className="text-xl font-bold text-gray-900">Recent Check-ins</h2>
-            </div>
-            {attendance.length > 0 ? (
-              <div className="space-y-2">
-                {attendance.slice(0, 5).map((record, index) => (
-                  <motion.div
-                    key={record.id}
-                    className="flex items-center justify-between p-3 bg-gradient-to-r from-red-50 to-orange-50 rounded-xl border border-red-100 hover:shadow-md transition-all"
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 1.1 + index * 0.1 }}
-                    whileHover={{ x: -5, scale: 1.02 }}
-                  >
-                    <div>
-                      <p className="font-semibold text-gray-900">
-                        {new Date(record.date).toLocaleDateString('en-US', { 
-                          weekday: 'short', 
-                          month: 'short', 
-                          day: 'numeric' 
-                        })}
-                      </p>
-                      <p className="text-xs text-gray-500">
-                        {record.check_in} {record.check_out && `- ${record.check_out}`}
-                      </p>
-                    </div>
-                    <span className="px-3 py-1 text-xs font-bold bg-gradient-to-r from-red-500 to-orange-500 text-white rounded-full shadow-md">
-                      {record.status}
-                    </span>
-                  </motion.div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-12">
-                <Calendar className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                <p className="text-gray-500 font-medium">No records yet</p>
-              </div>
-            )}
-          </motion.div>
-        </div>
-
-        {/* Motivation Section */}
+        {/* Workout Plans - DETAILED VIEW */}
         <motion.div
-          className="mt-8 bg-gradient-to-r from-red-600 via-orange-600 to-yellow-500 rounded-2xl shadow-2xl p-8 text-white border-2 border-white/20"
+          className="mb-8"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 1 }}
+        >
+          <div className="flex items-center gap-2 mb-6">
+            <Dumbbell className="w-6 h-6 text-red-500" />
+            <h2 className="text-2xl font-bold text-gray-900">My Workout Plans</h2>
+            {workoutPlans.length > 0 && (
+              <span className="px-3 py-1 bg-gradient-to-r from-red-500 to-orange-500 text-white text-sm font-bold rounded-full">
+                {workoutPlans.length} Active
+              </span>
+            )}
+          </div>
+
+          {workoutPlans.length > 0 ? (
+            <div className="space-y-4">
+              {workoutPlans.map((plan, index) => (
+                <motion.div
+                  key={plan.id}
+                  className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border-2 border-orange-100 overflow-hidden hover:shadow-xl transition-all"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 1.1 + index * 0.1 }}
+                >
+                  {/* Plan Header */}
+                  <div className="p-6 bg-gradient-to-r from-red-50 to-orange-50">
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex items-center gap-4">
+                        <div className="w-16 h-16 bg-gradient-to-r from-red-500 to-orange-500 rounded-xl flex items-center justify-center text-white font-bold text-2xl shadow-lg">
+                          💪
+                        </div>
+                        <div>
+                          <h3 className="text-xl font-bold text-gray-900 mb-1">
+                            Workout Plan #{plan.id}
+                          </h3>
+                          <div className="flex items-center gap-2">
+                            <User className="w-4 h-4 text-gray-600" />
+                            <span className="text-sm text-gray-600 font-medium">
+                              Trainer: {plan.trainer?.user?.username || 'Unknown'}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      <motion.button
+                        onClick={() => togglePlanExpansion(plan.id)}
+                        className="p-2 hover:bg-white rounded-lg transition-colors"
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.9 }}
+                      >
+                        {expandedPlanId === plan.id ? (
+                          <ChevronUp className="w-6 h-6 text-red-600" />
+                        ) : (
+                          <ChevronDown className="w-6 h-6 text-red-600" />
+                        )}
+                      </motion.button>
+                    </div>
+
+                    {/* Quick Info */}
+                    <div className="flex items-center gap-4 flex-wrap">
+                      <div className="flex items-center gap-1 px-3 py-1 bg-white rounded-full">
+                        <Clock className="w-4 h-4 text-orange-600" />
+                        <span className="text-xs font-medium text-gray-700">
+                          Created: {new Date(plan.created_at).toLocaleDateString()}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1 px-3 py-1 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-full">
+                        <CheckCircle className="w-4 h-4" />
+                        <span className="text-xs font-bold">Active</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Expandable Content */}
+                  <AnimatePresence>
+                    {expandedPlanId === plan.id && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.3 }}
+                        className="overflow-hidden"
+                      >
+                        <div className="p-6 border-t-2 border-orange-100">
+                          <div className="flex items-center gap-2 mb-4">
+                            <Award className="w-5 h-5 text-orange-600" />
+                            <h4 className="font-bold text-gray-900">Workout Details</h4>
+                          </div>
+                          
+                          {/* Plan Description */}
+                          <div className="bg-white rounded-xl p-4 border-2 border-orange-50">
+                            <pre className="text-sm text-gray-700 whitespace-pre-wrap font-sans leading-relaxed">
+                              {plan.description}
+                            </pre>
+                          </div>
+
+                          {/* Action Buttons */}
+                          <div className="mt-4 flex gap-3">
+                            
+                            <motion.button
+                              onClick={() => togglePlanExpansion(plan.id)}
+                              className="px-4 py-2 border-2 border-orange-200 text-gray-700 rounded-lg font-semibold text-sm hover:bg-orange-50"
+                              whileHover={{ scale: 1.02 }}
+                              whileTap={{ scale: 0.98 }}
+                            >
+                              Collapse
+                            </motion.button>
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </motion.div>
+              ))}
+            </div>
+          ) : (
+            <motion.div
+              className="text-center py-16 bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border-2 border-white/50"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+            >
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ type: "spring" }}
+              >
+                <Dumbbell className="w-20 h-20 text-gray-300 mx-auto mb-4" />
+              </motion.div>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">No Workout Plans Yet</h3>
+              <p className="text-gray-500 font-medium">Your trainer will assign you a customized plan soon!</p>
+              <p className="text-sm text-gray-400 mt-2">Check back later or contact your trainer</p>
+            </motion.div>
+          )}
+        </motion.div>
+
+        {/* Recent Attendance */}
+        <motion.div
+          className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg p-6 border-2 border-white/50 mb-8"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 1.2 }}
+        >
+          <div className="flex items-center gap-2 mb-6">
+            <Calendar className="w-5 h-5 text-orange-500" />
+            <h2 className="text-xl font-bold text-gray-900">Recent Check-ins</h2>
+          </div>
+          {attendance.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              {attendance.slice(0, 6).map((record, index) => (
+                <motion.div
+                  key={record.id}
+                  className="p-4 bg-gradient-to-r from-red-50 to-orange-50 rounded-xl border-2 border-red-100 hover:shadow-md transition-all"
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 1.3 + index * 0.05 }}
+                  whileHover={{ scale: 1.05 }}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="font-bold text-gray-900 text-sm">
+                      {new Date(record.date).toLocaleDateString('en-US', { 
+                        month: 'short', 
+                        day: 'numeric' 
+                      })}
+                    </p>
+                    <span className="px-2 py-1 text-xs font-bold bg-gradient-to-r from-red-500 to-orange-500 text-white rounded-full">
+                      {record.status}
+                    </span>
+                  </div>
+                  <p className="text-xs text-gray-600">
+                    {record.check_in} {record.check_out && `- ${record.check_out}`}
+                  </p>
+                </motion.div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12">
+              <Calendar className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+              <p className="text-gray-500 font-medium">No check-ins yet</p>
+              <p className="text-sm text-gray-400 mt-2">Hit the gym to build your streak!</p>
+            </div>
+          )}
+        </motion.div>
+
+        {/* Motivation Section */}
+        <motion.div
+          className="bg-gradient-to-r from-red-600 via-orange-600 to-yellow-500 rounded-2xl shadow-2xl p-8 text-white border-2 border-white/20"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 1.4 }}
           whileHover={{ scale: 1.02 }}
         >
           <div className="flex items-center gap-3 mb-3">
